@@ -11,16 +11,37 @@ class MoviesController < ApplicationController
   end
 
   def index
+    @all_ratings = Movie.all_ratings
+    @selected_ratings = params['ratings'] || session['ratings'] || {}
+
+    if @selected_ratings == {}
+      @selected_ratings = Hash[@all_ratings.map {|rating| [rating, true]}]
+    else
+      @selected_ratings = @selected_ratings.select{|k,v | v="true"}
+    end
+
     sort_by = params['sort']
     if sort_by == 'title'
-      @movies = Movie.all.order(:title)
+      # @movies = Movie.with_ratings(@selected_ratings).order(:title)
+      order_by = {:title => :asc}
       @title_header_class = "hilite bg-warning"
     elsif sort_by == 'release_date'
-      @movies = Movie.all.order(release_date: :desc)
+      # @movies = Movie.with_ratings(@selected_ratings).order(release_date: :desc)
+      order_by = {:release_date => :desc}
+      # @movies = Movie.all.order(:release_date)
       @release_date_header_class = "hilite bg-warning"
-    else
-      @movies = Movie.all
     end
+
+    if params[:sort] != session[:sort]
+      session[:sort] = params[:sort]
+    end
+    
+    if params[:ratings] != session[:ratings]
+      session[:ratings] = params[:ratings]
+    end
+
+
+    @movies = Movie.with_ratings(@selected_ratings.keys).order(order_by)
   end
 
   def new
